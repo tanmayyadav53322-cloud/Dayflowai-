@@ -1,54 +1,38 @@
 # DayFlow AI
 
-AI-style daily planner: describe your day in plain language, get a realistic schedule, run it step by step, then review and plan tomorrow. Single-file static web app (HTML, CSS, JavaScript), no build step.
+Plan, focus, complete, learn, improve. Static web app (HTML/CSS/JS, no build step) with Supabase auth and per-user cloud sync, installable as a PWA.
 
 ## Structure
-
 ```
-index.html            Main app with Supabase auth + per-user cloud sync
-standalone/index.html Same app without Supabase (data stays in the browser)
-supabase/schema.sql   user_state table + Row Level Security policies
+index.html             App with Supabase auth + cloud sync (PWA-enabled)
+manifest.webmanifest   PWA manifest
+sw.js                  Service worker (offline app shell)
+icon.svg               App icon
+standalone/index.html  Same app without Supabase/PWA (data stays in the browser)
+supabase/schema.sql    user_state table + Row Level Security
 ```
 
 ## Run locally
-
-```
-python3 -m http.server 8000
-# open http://localhost:8000
-```
-
-Use a local server (not file://) so Google/email-confirmation redirects work.
+`python3 -m http.server 8000` then open http://localhost:8000 (service workers and OAuth need http/https, not file://).
 
 ## Supabase setup
+1. SQL Editor: run `supabase/schema.sql`.
+2. Authentication > URL Configuration: set Site URL and Redirect URLs to your app URL (add http://localhost:8000 for local tests). Password-reset emails return here.
+3. Authentication > Providers > Google: enable with a Google Cloud OAuth client; redirect URI `https://ifsuwkcscpxqfjaqfhxc.supabase.co/auth/v1/callback`.
+4. Authentication > Providers > Email: choose whether confirmation is required.
 
-1. Supabase dashboard > SQL Editor: run `supabase/schema.sql`.
-2. Authentication > URL Configuration: set Site URL and Redirect URLs to your app URL (and `http://localhost:8000` for local testing).
-3. Authentication > Providers > Google: enable it with a Google Cloud OAuth client. Authorized redirect URI:
-   `https://ifsuwkcscpxqfjaqfhxc.supabase.co/auth/v1/callback`
-4. Authentication > Providers > Email: choose whether email confirmation is required.
-
-`index.html` contains the project URL and the **publishable** key (safe for the browser because Row Level Security restricts every row to its owner). Never put the secret or service_role key in this repo.
+The publishable key in `index.html` is safe in the browser because Row Level Security limits each row to its owner. Never commit a secret or service_role key.
 
 ## Deploy
-
-Any static host works: Netlify (drag and drop the folder), Vercel, Cloudflare Pages, or GitHub Pages. No build command; publish directory is the repo root.
+Any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages). No build command; publish the repo root over HTTPS.
 
 ## Features
+Proposed-plan flow (Accept / Edit / Regenerate), smart rescheduling with preview and undo, execution mode, quick add in natural language, recurring tasks, Day/Week/Month calendar, .ics calendar import, goals with milestones/deadlines/archive, AI Brain (goals, deadlines, habits, learned durations), Ask DayFlow (typed or voice), weekly and monthly insights, XP/achievements, theme (system/dark/light) and accent colour, reminders while the page is open, profile, data export, sign up/login/Google/forgot and change password.
 
-- Natural-language day planning, fixed events, buffers, overload detection
-- Execution mode: Complete, Pause, +5 min, Skip, Reschedule, focus rating
-- Smart rescheduling with preview and undo; never moves fixed or calendar events
-- Calendar: .ics import (stable event IDs, no duplicates) and manual busy time
-- AI Brain: goals, deadlines, habits, learned durations, best-window detection
-- Goals with milestones, productivity score, XP and achievements
-- Ask DayFlow command box (typed or voice) that proposes changes before applying
-- Weekly review, patterns, history, next-week plan, reminders (while page is open)
-- Supabase email/password and Google sign-in, per-user private cloud storage
-
-## Known limitations
-
-- The "AI" is rule-based (regex and heuristics), not a language model. To add one, call an LLM from a server route (for example a Supabase Edge Function) so the API key stays secret.
-- Google Calendar / Outlook OAuth, Razorpay billing, admin panel, analytics and per-feature SEO pages are not implemented; they need a server.
-- Whole app state is stored as one JSON document per user (`user_state.state`). Move to normalized tables (tasks, goals, habits, focus_sessions) before heavy use.
-- Reminders only fire while the page is open.
-- Not yet tested against the live Supabase project.
+## Not implemented / limitations
+- "AI" is rule-based, not a language model. Add one through a server function (e.g. Supabase Edge Function) so keys stay secret.
+- Calendar drag-and-drop and resizing, Google/Outlook calendar OAuth, Pomodoro timer presets, billing (Stripe/Razorpay), delete-account, profile picture upload, skeleton loaders and confirmation modals are not built.
+- Recurring tasks: edit/delete applies to the whole series only.
+- All state is one JSON document per user in `user_state`; normalise into tables before heavy use.
+- PWA icon is SVG only; iOS home-screen icons may need a PNG.
+- Not tested against the live Supabase project or on real devices.
